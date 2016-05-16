@@ -61,7 +61,19 @@ Test Put - Putting [NO OF RECORDS] records to the map
 Test Get - Getting [NO OF RECORDS] records from the map by key and verify the TestData is correct (value1=key1, value2=key2, value3=key2, value4=key1)
 Test Zero Copy - Same as Test Get except using a zero copy approach to read the data
 
+On a Macbook Pro with 2.2GHz Intel Core i7 16GB memory with SSD getting the following result to run 
 
+100M records on F1BinaryMapDirect:  
+Test Put 3888  
+Test Get 3963  
+Test Zero Copy 3435  
 
+100M records on F1BinaryMap:  
+Test Put 5225  
+Test Get 5693  
+Test Zero Copy 5247  
+
+100M records on HashMap:  
+Unable to run due to heavy GC actvitities  
 
 F1BinaryMap is a collaborative development effort between Smash.bi development team and University of Waterloo. We specially thank Professor Peter Buhr, Processor Martin Karsten, and Xianda Sun from University of Waterloo to contribute bulk of the F1BinaryMap development to make it one of the most efficient off heap key value lookup.
