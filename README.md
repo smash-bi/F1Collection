@@ -76,4 +76,6 @@ Test Zero Copy 5247
 100M records on HashMap:  
 Unable to run due to heavy GC actvitities  
 
+Originally Martin Thompson's Argona Buffer implementation was used for the off heap memory access. Unfortunately Argona uses int to reference the memory address. We temporarily took the Buffer implementation and modified to use long until Argona comes out with the long memory address reference.
+
 F1BinaryMap is a collaborative development effort between Smash.bi development team and University of Waterloo. We specially thank Professor Peter Buhr, Processor Martin Karsten, and Xianda Sun from University of Waterloo to contribute bulk of the F1BinaryMap development to make it one of the most efficient off heap key value lookup.
