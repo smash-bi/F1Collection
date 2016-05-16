@@ -18,8 +18,6 @@ package smash.f1.collection;
 
 import java.util.concurrent.ConcurrentHashMap;
 
-import com.eaio.uuid.UUID;
-
 public final class TestDataMapForConcurrentHashMap implements TestDataMap
 {
 	private int size;
