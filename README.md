@@ -34,4 +34,34 @@ VALUE value of the data
 
 F1BinaryMap, through various contructors, can store the data in direct off heap memory or via memory mapped file. F1BinaryMap also provides isConcurrentMap option to optionally handle the put and get access in a concurrently safe manner. F1BinaryMap, when used in single threaded access, also provide a zero copy get access to reduce the overhead from memory copy.
 
+MapPerformanceTest can be used to evaluate the performance:
+
+smash.f1.collection.MapPerformanceTest [NO OF RECORDS] [IMPLEMENTATION] [OPTIONAL MEMORY MAPPED FILE]  
+
+[NO OF RECORDS] no of records will be used for testing  
+[IMPLEMENTATION] implementation to be used for the test. Valid values are:  
+       HashMap - performance test against java.util.HashMap  
+                 (Please use -Xmx14g -Xms14g -XX:NewSize=10g to allocate enough memory for the test)
+       ConcurrentHashMap - performance test against java.util.concurrent.ConcurrentHashMap  
+                           (Please use -Xmx14g -Xms14g -XX:NewSize=10g to allocate enough memory for the test)
+       F1BinaryMap - performance test against F1BinaryMap with memory mapped file backing. [OPTIONAL MEMORY MAPPED FILE] needs to be supplied
+       F1BinaryMapDirect - performance test against F1BinaryMap with direct off heap memory
+[OPTIONAL MEMORY MAPPED FILE] when F1BinaryMap is supplied as [IMPLEMENTATION], needs to supply the name and path of the memory mapped file to be used to back the data storage
+
+TestData has 6 longs fields with the following layout:  
+long key1  
+long key2  
+long value1 (set to have the same value as key1)  
+long value2 (set to have the same value as key2)  
+long value3 (set to have the same value as key2)  
+long value4 (set to have the same value as key1)  
+
+Each test will run 20 iterations and print out the total time to take to complete the following test in milliseconds
+Test Put - Putting [NO OF RECORDS] records to the map
+Test Get - Getting [NO OF RECORDS] records from the map by key and verify the TestData is correct (value1=key1, value2=key2, value3=key2, value4=key1)
+Test Zero Copy - Same as Test Get except using a zero copy approach to read the data
+
+
+
+
 F1BinaryMap is a collaborative development effort between Smash.bi development team and University of Waterloo. We specially thank Professor Peter Buhr, Processor Martin Karsten, and Xianda Sun from University of Waterloo to contribute bulk of the F1BinaryMap development to make it one of the most efficient off heap key value lookup.
