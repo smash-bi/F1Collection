@@ -1,5 +1,5 @@
 # F1Collection by Smash.bi http://www.smash.bi
-F1 Collection contains Java implementation of collection libraries using off heap memory to store fixed length binary data. Since accessing off heap memory in Java is currently a bit slower than on heap memory, F1 Collection is more suited for applications require large amount of memory (in GB or TB) where using on heap collection implementation will severely affect application performance due to the impact from garbage collection activities.
+F1 Collection contains Java implementation of collection libraries using off heap memory to store fixed length binary data. Since accessing off heap memory in Java is currently a bit slower than on heap memory, F1 Collection is more suited for applications require storing large amount of fixed length binary data (in GB or TB) where using on heap collection implementation will severely affect application performance due to the impact from garbage collection activities.
 
 Currently F1 Collection provides a key value lookup F1 Binary Map. In the near future we will add other collection libraries including list and sorted version of list and map.
 
