@@ -1,5 +1,5 @@
-# F1Collection
-F1 Collection contains Java implementation of collection libraries using off heap memory to store fixed length binary data. Since accessing off heap memory in Java is currently a bit slower than on heap memory, F1 Collection is more suited for applications require large amount of memory (in GB or TB) where using on heap collection implementation will severely affect application performance due to the impact from garbage collection activities.
+# F1Collection by Smash.bi http://www.smash.bi
+F1 Collection contains Java implementation of collection libraries using off heap memory to store fixed length binary data. Since accessing off heap memory in Java is currently a bit slower than on heap memory, F1 Collection is more suited for applications require storing large amount of fixed length binary data (in GB or TB) where using on heap collection implementation will severely affect application performance due to the impact from garbage collection activities.
 
 Currently F1 Collection provides a key value lookup F1 Binary Map. In the near future we will add other collection libraries including list and sorted version of list and map.
 
@@ -33,5 +33,49 @@ KEY key of the data
 VALUE value of the data 
 
 F1BinaryMap, through various contructors, can store the data in direct off heap memory or via memory mapped file. F1BinaryMap also provides isConcurrentMap option to optionally handle the put and get access in a concurrently safe manner. F1BinaryMap, when used in single threaded access, also provide a zero copy get access to reduce the overhead from memory copy.
+
+MapPerformanceTest can be used to evaluate the performance:
+
+smash.f1.collection.MapPerformanceTest [NO OF RECORDS] [IMPLEMENTATION] [OPTIONAL MEMORY MAPPED FILE]  
+
+[NO OF RECORDS] no of records will be used for testing  
+[IMPLEMENTATION] implementation to be used for the test. Valid values are:  
+       HashMap - performance test against java.util.HashMap  
+                 (Please use -Xmx14g -Xms14g -XX:NewSize=10g to allocate enough memory for the test)
+       ConcurrentHashMap - performance test against java.util.concurrent.ConcurrentHashMap  
+                           (Please use -Xmx14g -Xms14g -XX:NewSize=10g to allocate enough memory for the test)
+       F1BinaryMap - performance test against F1BinaryMap with memory mapped file backing. [OPTIONAL MEMORY MAPPED FILE] needs to be supplied
+       F1BinaryMapDirect - performance test against F1BinaryMap with direct off heap memory
+[OPTIONAL MEMORY MAPPED FILE] when F1BinaryMap is supplied as [IMPLEMENTATION], needs to supply the name and path of the memory mapped file to be used to back the data storage
+
+TestData has 6 longs fields with the following layout:  
+long key1  
+long key2  
+long value1 (set to have the same value as key1)  
+long value2 (set to have the same value as key2)  
+long value3 (set to have the same value as key2)  
+long value4 (set to have the same value as key1)  
+
+Each test will run 20 iterations and print out the total time to take to complete the following test in milliseconds
+Test Put - Putting [NO OF RECORDS] records to the map
+Test Get - Getting [NO OF RECORDS] records from the map by key and verify the TestData is correct (value1=key1, value2=key2, value3=key2, value4=key1)
+Test Zero Copy - Same as Test Get except using a zero copy approach to read the data
+
+On a Macbook Pro with 2.2GHz Intel Core i7 16GB memory with SSD getting the following result to run 
+
+100M records on F1BinaryMapDirect:  
+Test Put 3888  
+Test Get 3963  
+Test Zero Copy 3435  
+
+100M records on F1BinaryMap:  
+Test Put 5225  
+Test Get 5693  
+Test Zero Copy 5247  
+
+100M records on HashMap:  
+Unable to run due to heavy GC actvitities  
+
+Originally Martin Thompson's Argona Buffer implementation was used for the off heap memory access. Unfortunately Argona uses int to reference the memory address. We temporarily took the Buffer implementation and modified to use long until Argona comes out with the long memory address reference.
 
 F1BinaryMap is a collaborative development effort between Smash.bi development team and University of Waterloo. We specially thank Professor Peter Buhr, Processor Martin Karsten, and Xianda Sun from University of Waterloo to contribute bulk of the F1BinaryMap development to make it one of the most efficient off heap key value lookup.
