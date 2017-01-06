@@ -455,8 +455,8 @@ public class F1BinaryMap
      */
     private class HashBucketRegion
     {
-    	private final int noOfBuckets;
-    	private final int modFactor;
+    	private final long noOfBuckets;
+    	private final long modFactor;
     	
     	/**
     	 * create hash buckets
@@ -464,7 +464,7 @@ public class F1BinaryMap
     	 */
     	private HashBucketRegion( final long aNoOfBuckets )
     	{
-    		noOfBuckets = (int)aNoOfBuckets;
+    		noOfBuckets = aNoOfBuckets;
     		modFactor = noOfBuckets - 1;
     	}
     	
@@ -473,7 +473,7 @@ public class F1BinaryMap
     	 * @param aBucketIndex bucket index
     	 * @return top field address for the given bucket
     	 */
-    	private long getTopFieldAddress( int aBucketIndex )
+    	private long getTopFieldAddress( long aBucketIndex )
     	{
     		return HASH_BUCKETS_TOP_FIELD_OFFSET + aBucketIndex * HASH_BUCKETS_STRIDE;
     	}
@@ -483,7 +483,7 @@ public class F1BinaryMap
     	 * @param aBucketIndex bucket index
     	 * @return lock field address for the given bucket
     	 */
-    	private long getLockFieldAddress( int aBucketIndex )
+    	private long getLockFieldAddress( long aBucketIndex )
     	{
     		return HASH_BUCKETS_LOCK_FIELD_OFFSET + aBucketIndex * HASH_BUCKETS_STRIDE;
     	}
@@ -493,7 +493,7 @@ public class F1BinaryMap
     	 * @param aBucketIndex index of the bucket
     	 * @return top value of the given bucket
     	 */
-    	private long getTop( final int aBucketIndex )
+    	private long getTop( final long aBucketIndex )
     	{
     		return mapBackingStore.getLongFromMemoryRegion( getTopFieldAddress(aBucketIndex) );
     	}
@@ -503,7 +503,7 @@ public class F1BinaryMap
     	 * @param aBucketIndex index of the bucket
     	 * @param aValue top value of the given bucket
     	 */
-    	private void updateTop( final int aBucketIndex, final long aValue )
+    	private void updateTop( final long aBucketIndex, final long aValue )
     	{
     		mapBackingStore.putLongInMemoryRegion( getTopFieldAddress(aBucketIndex), aValue );
     	}
@@ -512,7 +512,7 @@ public class F1BinaryMap
     	 * lock the given bucket
     	 * @param aBucketIndex index of the bucket
     	 */
-    	private void lock( final int aBucketIndex )
+    	private void lock( final long aBucketIndex )
     	{
     		if ( concurrentMap )
     		{
@@ -524,7 +524,7 @@ public class F1BinaryMap
     	 * unlock the given bucket
     	 * @param aBucketIndex index of the bucket
     	 */
-    	private void unlock( final int aBucketIndex )
+    	private void unlock( final long aBucketIndex )
     	{
     		if ( concurrentMap )
     		{
@@ -537,7 +537,7 @@ public class F1BinaryMap
     	 */
     	private void initializeHashBuckets()
     	{
-    		for( int bucketIndex=0; bucketIndex<noOfBuckets; bucketIndex++ )
+    		for( long bucketIndex=0; bucketIndex<noOfBuckets; bucketIndex++ )
     		{
     			mapBackingStore.putLongInMemoryRegion( getTopFieldAddress(bucketIndex), NULL );
     			mapBackingStore.putLongInMemoryRegion( getLockFieldAddress(bucketIndex), VALUE_UNLOCKED );
@@ -550,7 +550,7 @@ public class F1BinaryMap
     	 * @param aKeyStartIndex starting index of the key
     	 * @return hash value
     	 */
-    	private int hash( final LongDirectBuffer aKey, final long aStartIndex ) 
+    	private long hash( final LongDirectBuffer aKey, final long aStartIndex ) 
     	{ 
     		return Math.abs( (int)keyFunction.hash(aKey, aStartIndex, keySize) & modFactor ); 
     	} // convert signed int to unsigned long
@@ -659,7 +659,7 @@ public class F1BinaryMap
     	 * @param aBucketIndex index of the bucket
     	 * @return record number created
     	 */
-    	private long newRecord( final LongDirectBuffer aKey, final long aKeyStartIndex, final int aBucketIndex )
+    	private long newRecord( final LongDirectBuffer aKey, final long aKeyStartIndex, final long aBucketIndex )
     	{
     		// TODO potentially optimize it without the need to resolve the address everytime 
 		    long recordPosition = allocateNewRecordInBucket( aBucketIndex );
@@ -770,7 +770,7 @@ public class F1BinaryMap
 	 * @param aBucketIndex index of the bucket the new record will be created
 	 * @return newly created record number
 	 */
-	private long allocateNewRecordInBucket( final int aBucketIndex ) 
+	private long allocateNewRecordInBucket( final long aBucketIndex ) 
 	{
 	    lockMap();
 	    try 
@@ -791,7 +791,7 @@ public class F1BinaryMap
 			    	if ( expandedMapBackingStoreSize == -1 ) 
 			    	{	
 			    		long recordPosition;
-			    		for ( int currentBucketIndex = (aBucketIndex + 1) & hashBucketRegion.modFactor; ; currentBucketIndex = (currentBucketIndex + 1) & hashBucketRegion.modFactor ) 
+			    		for ( long currentBucketIndex = (aBucketIndex + 1) & hashBucketRegion.modFactor; ; currentBucketIndex = (currentBucketIndex + 1) & hashBucketRegion.modFactor ) 
 			    		{
 			    			// cycled ?
 			    			if ( currentBucketIndex == aBucketIndex ) 
@@ -862,7 +862,7 @@ public class F1BinaryMap
 	 */
 	public long getRecordPosition( final LongDirectBuffer aKey, final long aKeyStartIndex ) 
 	{			
-	    int bucket = hashBucketRegion.hash( aKey, aKeyStartIndex );
+	    long bucket = hashBucketRegion.hash( aKey, aKeyStartIndex );
 	    hashBucketRegion.lock( bucket );
 	    try 
 	    {
@@ -900,7 +900,7 @@ public class F1BinaryMap
 	 */
 	public long getRecord( final LongDirectBuffer aKey, final long aKeyStartIndex, final LongMutableDirectBuffer aValue, final long aValueStartIndex ) 
 	{		
-	    int bucket = hashBucketRegion.hash( aKey, aKeyStartIndex );
+	    long bucket = hashBucketRegion.hash( aKey, aKeyStartIndex );
 	    hashBucketRegion.lock( bucket );
 	    try 
 	    {
@@ -946,7 +946,7 @@ public class F1BinaryMap
 		{
 			throw new RuntimeException( "This method cannot be used in concurrent mode" );
 		}
-	    int bucket = hashBucketRegion.hash( aKey, aKeyStartIndex );
+	    long bucket = hashBucketRegion.hash( aKey, aKeyStartIndex );
 	    hashBucketRegion.lock( bucket );
 	    try 
 	    {
@@ -986,7 +986,7 @@ public class F1BinaryMap
 	 */
 	final long putRecord( final LongDirectBuffer aKey, final long aKeyStartIndex, final LongDirectBuffer aValue, final long aValueStartIndex ) 
 	{
-	    int bucket = hashBucketRegion.hash( aKey, aKeyStartIndex );
+	    long bucket = hashBucketRegion.hash( aKey, aKeyStartIndex );
 	    hashBucketRegion.lock( bucket );
 	    long recordPosition = NULL;
 	    // check for update versus add
@@ -1085,7 +1085,7 @@ public class F1BinaryMap
 	final boolean remove( final LongDirectBuffer aKey, final long aKeyStartIndex ) 
 	{
 	    boolean found = false;
-	    int bucket = hashBucketRegion.hash( aKey, aKeyStartIndex );
+	    long bucket = hashBucketRegion.hash( aKey, aKeyStartIndex );
 	    long recordPosition = 0;
 
 	    hashBucketRegion.lock( bucket );
@@ -1155,7 +1155,7 @@ public class F1BinaryMap
 			throw new RuntimeException( "Cannot use this method to traverse concurrent map. Please use traverse( anIterator, aBuffer )" );
 		}
 		// iterate through
-	    for ( int bucketIndex = 0; bucketIndex < hashBucketRegion.noOfBuckets; bucketIndex += 1 ) 
+	    for ( long bucketIndex = 0; bucketIndex < hashBucketRegion.noOfBuckets; bucketIndex += 1 ) 
 	    {
 	    	long bucketTop = hashBucketRegion.getTop( bucketIndex );
 	    	if ( bucketTop != NULL ) 
@@ -1187,7 +1187,7 @@ public class F1BinaryMap
 			throw new RuntimeException( "Cannot use this method to traverse concurrent map. Please use traverse( anIterator, aBuffer )" );
 		}
 		// iterate through
-	    for ( int bucketIndex = 0; bucketIndex < hashBucketRegion.noOfBuckets; bucketIndex += 1 ) 
+	    for ( long bucketIndex = 0; bucketIndex < hashBucketRegion.noOfBuckets; bucketIndex += 1 ) 
 	    {
 	    	long bucketTop = hashBucketRegion.getTop( bucketIndex );
 	    	if ( bucketTop != NULL ) 
@@ -1213,11 +1213,11 @@ public class F1BinaryMap
 		{
 			// lock everything first
 			lockMap();
-		    for ( int bucketIndex = 0; bucketIndex < hashBucketRegion.noOfBuckets; bucketIndex += 1 ) 
+		    for ( long bucketIndex = 0; bucketIndex < hashBucketRegion.noOfBuckets; bucketIndex += 1 ) 
 		    {
 		    	hashBucketRegion.lock(bucketIndex);
 		    }
-		    for ( int bucketIndex = 0; bucketIndex < hashBucketRegion.noOfBuckets; bucketIndex += 1 ) 
+		    for ( long bucketIndex = 0; bucketIndex < hashBucketRegion.noOfBuckets; bucketIndex += 1 ) 
 		    {
 		    	long bucketTop = hashBucketRegion.getTop( bucketIndex );
 		    	if ( bucketTop != NULL ) 
@@ -1236,7 +1236,7 @@ public class F1BinaryMap
 		finally
 		{
 			// unlock everything
-		    for ( int bucketIndex = 0; bucketIndex < hashBucketRegion.noOfBuckets; bucketIndex += 1 ) 
+		    for ( long bucketIndex = 0; bucketIndex < hashBucketRegion.noOfBuckets; bucketIndex += 1 ) 
 		    {
 		    	hashBucketRegion.unlock(bucketIndex);
 		    }
@@ -1266,7 +1266,7 @@ public class F1BinaryMap
 		    
 		    System.out.println( "----------------------- Start Hash Bucket Regions Dump -----------------------" );
 		    System.out.println( "Buckets: ");
-		    for ( int bucketIndex = 0; bucketIndex < hashBucketRegion.noOfBuckets; bucketIndex += 1 ) 
+		    for ( long bucketIndex = 0; bucketIndex < hashBucketRegion.noOfBuckets; bucketIndex += 1 ) 
 		    {
 		    	long bucketTop = hashBucketRegion.getTop( bucketIndex );
 		    	if ( bucketTop != NULL ) 
@@ -1319,7 +1319,7 @@ public class F1BinaryMap
 		{
 		    long usedBuckets = 0, maxHashChain = 0, equalMax = 0, size = getSize();
 	
-		    for ( int bucketIndex = 0; bucketIndex < hashBucketRegion.noOfBuckets; bucketIndex += 1 ) 
+		    for ( long bucketIndex = 0; bucketIndex < hashBucketRegion.noOfBuckets; bucketIndex += 1 ) 
 		    {
 				if ( hashBucketRegion.getTop( bucketIndex ) != NULL ) 
 				{

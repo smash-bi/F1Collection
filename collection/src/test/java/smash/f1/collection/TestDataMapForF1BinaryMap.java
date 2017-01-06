@@ -119,6 +119,15 @@ public final class TestDataMapForF1BinaryMap implements TestDataMap
 	}
 	
 	/**
+	 * get max size
+	 * @return max size of the map
+	 */
+	public long getMaxSize()
+	{
+		return binaryMap.getMaxMapSize();
+	}
+	
+	/**
 	 * iterate all the key and values by traversing the map. This method can be used by non-concurrent map
 	 * and memory access will be provided in no copy style. Access this method with concurrent map will get run time exception
 	 * @param anIterator iterator

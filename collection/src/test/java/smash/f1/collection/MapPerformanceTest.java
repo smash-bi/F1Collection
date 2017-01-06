@@ -27,11 +27,15 @@ public final class MapPerformanceTest
 	 * @param aMap map to be used
 	 * @param aNoOfData no of data to be used for testing
 	 */
-	public final static void PrepareTest( final TestDataMap aMap, final int aNoOfData )
+	public final static void PrepareTest( final TestDataMap aMap, final long aNoOfData )
 	{
+		long time = System.currentTimeMillis();
 		aMap.clear();
+		time = System.currentTimeMillis() - time;
+		System.out.println( "Prepare Test Clear Took " + time );
+		time = System.currentTimeMillis();
 		TestData data = null;
-		for( int count=0; count<aNoOfData; count++ )
+		for( long count=0; count<aNoOfData; count++ )
 		{
 			if ( data == null || aMap.needNewData() )
 			{
@@ -44,20 +48,32 @@ public final class MapPerformanceTest
 			data.setData( count, count+aNoOfData);
 			aMap.put(data);
 		}
+		time = System.currentTimeMillis() - time;
+		System.out.println( "Prepare Test Put Took " + time );
+		time = System.currentTimeMillis();
 		if ( aMap.needNewData() )
 		{
 			data = aMap.createTestData();
 		}
-		for( int count=0; count<aNoOfData; count++ )
+		for( long count=0; count<aNoOfData; count++ )
 		{
 			data.setKey(count, count+aNoOfData);
 			TestData retrievedData = aMap.get(data);
+			if ( retrievedData == null )
+			{
+				throw new RuntimeException( "Data is missing " + count );
+			}
 			if ( !retrievedData.isCorrect() )
 			{
 				throw new RuntimeException( "Data is incorrect " + count );
 			}
 		}
+		time = System.currentTimeMillis() - time;
+		System.out.println( "Prepare Test Get Took " + time );
+		time = System.currentTimeMillis();
 		aMap.clear();
+		time = System.currentTimeMillis() - time;
+		System.out.println( "Prepare Test Second Clear Took " + time );
 	}
 	
 	/**
@@ -66,15 +82,15 @@ public final class MapPerformanceTest
 	 * @param aNoOfData no of data to be used for testing
 	 * @return time taken in ms
 	 */
-	public final static long TestAdd( final TestDataMap aMap, final int aNoOfData )
+	public final static long TestAdd( final TestDataMap aMap, final long aNoOfData )
 	{
 		long time = System.currentTimeMillis();
 		TestData data = null;
-		for( int count=0; count<aNoOfData; count++ )
+		for( long count=0; count<aNoOfData; count++ )
 		{
 			if ( aMap.needNewData() )
 			{
-				data = TestDataList.get( count );
+				data = TestDataList.get( (int)count );
 			}
 			else if ( data == null )
 			{
@@ -92,11 +108,11 @@ public final class MapPerformanceTest
 	 * @param aNoOfData no of data to be used for testing
 	 * @return time taken in ms
 	 */
-	public final static long TestGet( final TestDataMap aMap, final int aNoOfData )
+	public final static long TestGet( final TestDataMap aMap, final long aNoOfData )
 	{
 		long time = System.currentTimeMillis();
 		TestData data = aMap.createTestData();
-		for( int count=0; count<aNoOfData; count++ )
+		for( long count=0; count<aNoOfData; count++ )
 		{
 			data.setKey(count, count+aNoOfData);
 			TestData retrievedData = aMap.get(data);
@@ -114,7 +130,7 @@ public final class MapPerformanceTest
 	 * @param aNoOfData no of data to be used for testing
 	 * @return time taken in ms
 	 */
-	public final static long TestGetWithZeroCopy( final TestDataMap aMap, final int aNoOfData )
+	public final static long TestGetWithZeroCopy( final TestDataMap aMap, final long aNoOfData )
 	{
 		long time = System.currentTimeMillis();
 		TestData data = aMap.createTestDataForZeroCopy();
@@ -123,7 +139,7 @@ public final class MapPerformanceTest
 			// not supporting zero copy
 			return -1;
 		}
-		for( int count=0; count<aNoOfData; count++ )
+		for( long count=0; count<aNoOfData; count++ )
 		{
 			data.setKey(count, count+aNoOfData);
 			aMap.getZeroCopy(data);
@@ -140,26 +156,44 @@ public final class MapPerformanceTest
 		TestDataMap map = null;
 		try
 		{
-			int noOfData = Integer.parseInt( args[0] );
+			long noOfData = Long.parseLong( args[0] );
 			String mapClass = args[1];
 			String mapFileDirectory = args[2];
 			if ( mapClass.equals( "HashMap" ) )
 			{
-				map = new TestDataMapForHashMap( noOfData );
+				if ( noOfData > Integer.MAX_VALUE )
+				{
+					map = new TestDataMapForHashMap( Integer.MAX_VALUE );
+				}
+				else
+				{
+					map = new TestDataMapForHashMap( (int)noOfData );
+				}
 			}
 			else if ( mapClass.equals( "ConcurrentHashMap" ) )
 			{
-				map = new TestDataMapForConcurrentHashMap( noOfData );
+				if ( noOfData > Integer.MAX_VALUE )
+				{
+					map = new TestDataMapForConcurrentHashMap( Integer.MAX_VALUE );
+				}
+				else
+				{
+					map = new TestDataMapForConcurrentHashMap( (int)noOfData );
+				}
 			}
 			else if ( mapClass.equals( "F1BinaryMap") )
 			{
-				map = new TestDataMapForF1BinaryMap( mapFileDirectory, noOfData, 
+				TestDataMapForF1BinaryMap binaryMap = new TestDataMapForF1BinaryMap( mapFileDirectory, noOfData, 
 								noOfData, noOfData, false );
+				map = binaryMap;
+				System.out.println( "Max Size " + binaryMap.getMaxSize() + " Size " + binaryMap.getSize()  );
 			}
 			else if ( mapClass.equals( "F1BinaryMapDirect"))
 			{
-				map = new TestDataMapForF1BinaryMap( noOfData, 
+				TestDataMapForF1BinaryMap binaryMap = new TestDataMapForF1BinaryMap( noOfData, 
 						noOfData, noOfData, false );
+				map = binaryMap;
+				System.out.println( "Max Size " + binaryMap.getMaxSize() + " Size " + binaryMap.getSize()  );
 			}
 			else
 			{
