@@ -57,4 +57,9 @@ public interface TestData
 	 * @return key 2
 	 */
 	public long getKey2();
+	
+	/**
+	 * to string
+	 */
+	public String getPrintableText();
 }

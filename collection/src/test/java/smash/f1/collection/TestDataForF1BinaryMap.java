@@ -97,4 +97,21 @@ public final class TestDataForF1BinaryMap implements TestData
 	{
 		return buffer.getLong(8 );
 	}
+	
+	@Override
+	public String getPrintableText(){
+		StringBuilder builder = new StringBuilder();
+		builder.append( buffer.getLong(0) );
+		builder.append( ' ' );
+		builder.append( buffer.getLong(8) );
+		builder.append( ' ' );
+		builder.append( buffer.getLong(16) );
+		builder.append( ' ' );
+		builder.append( buffer.getLong(24) );
+		builder.append( ' ' );
+		builder.append( buffer.getLong(32) );
+		builder.append( ' ' );
+		builder.append( buffer.getLong(40) );
+		return builder.toString();
+	}
 }

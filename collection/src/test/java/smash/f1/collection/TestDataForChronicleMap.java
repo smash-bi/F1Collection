@@ -75,4 +75,8 @@ public final class TestDataForChronicleMap implements TestData, Byteable
 		return 0;
 	}
 
+	@Override
+	public String getPrintableText(){
+		return null;
+	}
 }

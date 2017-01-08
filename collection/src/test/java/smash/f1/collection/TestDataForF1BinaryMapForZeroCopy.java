@@ -96,4 +96,21 @@ public final class TestDataForF1BinaryMapForZeroCopy implements TestData
 	{
 		return keyBuffer.getLong(8 );
 	}
+	
+	@Override
+	public String getPrintableText(){
+		StringBuilder builder = new StringBuilder();
+		builder.append( keyBuffer.getLong(0) );
+		builder.append( ' ' );
+		builder.append( keyBuffer.getLong(8) );
+		builder.append( ' ' );
+		builder.append( valueBuffer.getLong(0) );
+		builder.append( ' ' );
+		builder.append( valueBuffer.getLong(8) );
+		builder.append( ' ' );
+		builder.append( valueBuffer.getLong(16) );
+		builder.append( ' ' );
+		builder.append( valueBuffer.getLong(24) );
+		return builder.toString();
+	}
 }

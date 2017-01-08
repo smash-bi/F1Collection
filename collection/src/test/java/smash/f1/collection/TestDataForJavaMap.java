@@ -73,4 +73,21 @@ public final class TestDataForJavaMap implements TestData
 	{
 		return uuid.getLeastSignificantBits();
 	}
+	
+	@Override
+	public String getPrintableText(){
+		StringBuilder builder = new StringBuilder();
+		builder.append( uuid.getMostSignificantBits() );
+		builder.append( ' ' );
+		builder.append( uuid.getLeastSignificantBits() );
+		builder.append( ' ' );
+		builder.append( value1 );
+		builder.append( ' ' );
+		builder.append( value2 );
+		builder.append( ' ' );
+		builder.append( value3 );
+		builder.append( ' ' );
+		builder.append( value4 );
+		return builder.toString();
+	}
 }

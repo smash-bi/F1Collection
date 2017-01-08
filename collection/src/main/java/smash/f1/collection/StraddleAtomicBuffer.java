@@ -22,11 +22,12 @@ import java.nio.ByteOrder;
 import smash.f1.core.agrona.LongAtomicBuffer;
 import smash.f1.core.agrona.LongDirectBuffer;
 import smash.f1.core.agrona.LongMutableDirectBuffer;
+import smash.f1.core.agrona.LongStraddleBuffer;
 
 /**
  * StraddleAtomicBuffer straddle with 2 atomic buffers
  */
-final class StraddleAtomicBuffer implements LongAtomicBuffer
+final class StraddleAtomicBuffer implements LongStraddleBuffer
 {
 	// main buffer
 	private final LongAtomicBuffer firstBuffer;
@@ -469,7 +470,7 @@ final class StraddleAtomicBuffer implements LongAtomicBuffer
     		// take care of the first memory region
     		int firstFilled=length-overflow;
     		firstBuffer.getBytes(index, dstBuffer, dstIndex,firstFilled);
-    		secondBuffer.getBytes(0, dstBuffer, dstIndex+firstFilled, overflow); 		
+    		secondBuffer.getBytes(0, dstBuffer, dstIndex+firstFilled, overflow);
     	}
 	}
 

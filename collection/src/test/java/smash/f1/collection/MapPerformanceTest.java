@@ -65,7 +65,7 @@ public final class MapPerformanceTest
 			}
 			if ( !retrievedData.isCorrect() )
 			{
-				throw new RuntimeException( "Data is incorrect " + count );
+				throw new RuntimeException( "Data is incorrect " + count + " expecting " + count + " " + count+aNoOfData + " got " + retrievedData.getPrintableText());
 			}
 		}
 		time = System.currentTimeMillis() - time;
@@ -201,7 +201,7 @@ public final class MapPerformanceTest
 			}
 			System.out.println( "Warming up " + mapClass + " Testing " + noOfData + " data" );
 			PrepareTest( map, noOfData );
-			for( int count=0; count<20; count++ )
+			for( int count=0; count<1; count++ )
 			{
 				System.out.println( "Test Put " + TestAdd( map, noOfData ) );
 				System.out.println( "Test Get " + TestGet( map, noOfData ) );

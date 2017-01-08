@@ -899,18 +899,25 @@ public class LongUnsafeBuffer implements LongAtomicBuffer, Comparable<LongUnsafe
 
     public void putBytes(final long index, final LongDirectBuffer srcBuffer, final long srcIndex, final int length)
     {
-        if (SHOULD_BOUNDS_CHECK)
-        {
-            boundsCheck0(index, length);
-            srcBuffer.boundsCheck(srcIndex, length);
-        }
-
-        UNSAFE.copyMemory(
-            srcBuffer.byteArray(),
-            srcBuffer.addressOffset() + srcIndex,
-            byteArray,
-            addressOffset + index,
-            length);
+    	if ( srcBuffer instanceof LongStraddleBuffer )
+    	{
+    		srcBuffer.getBytes(srcIndex, this, index, length);
+    	}
+    	else
+    	{
+	        if (SHOULD_BOUNDS_CHECK)
+	        {
+	            boundsCheck0(index, length);
+	            srcBuffer.boundsCheck(srcIndex, length);
+	        }
+	
+	        UNSAFE.copyMemory(
+	            srcBuffer.byteArray(),
+	            srcBuffer.addressOffset() + srcIndex,
+	            byteArray,
+	            addressOffset + index,
+	            length);
+    	}
     }
 
     ///////////////////////////////////////////////////////////////////////////
