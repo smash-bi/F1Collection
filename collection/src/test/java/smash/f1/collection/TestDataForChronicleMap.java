@@ -16,67 +16,112 @@
  */
 package smash.f1.collection;
 
-import net.openhft.lang.io.Bytes;
-import net.openhft.lang.model.Byteable;
+import java.nio.BufferOverflowException;
+import java.nio.BufferUnderflowException;
+
+import net.openhft.chronicle.bytes.Byteable;
+import net.openhft.chronicle.bytes.BytesStore;
 
 public final class TestDataForChronicleMap implements TestData, Byteable
 {
+	private final static long	MAX_SIZE = 48;
+	private BytesStore bytesStore;
+	private long offset;
+	
+	public TestDataForChronicleMap()
+	{
+		Thread.currentThread().dumpStack();
+	}
+	
 	@Override
-	public void setKey(long aKey1, long aKey2) {
-		// TODO Auto-generated method stub
-		
+	public BytesStore bytesStore() 
+	{
+		return bytesStore;
 	}
 
 	@Override
-	public void setData(long aKey1, long aKey2) {
-		// TODO Auto-generated method stub
-		
+	public void bytesStore(BytesStore aBytesStore, long anOffset, long aSize)
+			throws IllegalStateException, IllegalArgumentException,
+			BufferOverflowException, BufferUnderflowException 
+	{
+		if ( aSize != MAX_SIZE )
+		{
+			throw new IllegalArgumentException();
+		}
+		bytesStore = aBytesStore;
+		offset = anOffset;
 	}
 
 	@Override
-	public boolean isCorrect() {
-		// TODO Auto-generated method stub
-		return false;
+	public long maxSize() 
+	{
+		return MAX_SIZE;
 	}
 
 	@Override
-	public Bytes bytes() {
-		// TODO Auto-generated method stub
-		return null;
+	public long offset() 
+	{
+		return offset;
 	}
 
 	@Override
-	public void bytes(Bytes arg0, long arg1) {
-		// TODO Auto-generated method stub
-		
+	public void setKey(long aKey1, long aKey2) 
+	{
+		bytesStore.writeLong(offset+0, aKey1);
+		bytesStore.writeLong(offset+8, aKey2);
+		bytesStore.writeLong(offset+16, -1L);
+		bytesStore.writeLong(offset+24, -1L);
+		bytesStore.writeLong(offset+32, -1L);
+		bytesStore.writeLong(offset+40, -1L);
 	}
 
 	@Override
-	public int maxSize() {
-		// TODO Auto-generated method stub
-		return 0;
+	public void setData(long aKey1, long aKey2) 
+	{
+		bytesStore.writeLong(offset+0, aKey1);
+		bytesStore.writeLong(offset+8, aKey2);
+		bytesStore.writeLong(offset+16, aKey1);
+		bytesStore.writeLong(offset+24, aKey2);
+		bytesStore.writeLong(offset+32, aKey2);
+		bytesStore.writeLong(offset+40, aKey1);
 	}
 
 	@Override
-	public long offset() {
-		// TODO Auto-generated method stub
-		return 0;
+	public boolean isCorrect() 
+	{
+		return ( bytesStore.readLong(offset+0) ==  bytesStore.readLong(offset+16) &&  bytesStore.readLong(offset+0) ==  bytesStore.readLong(offset+40) ) 
+				&&
+				(  bytesStore.readLong(offset+8) ==  bytesStore.readLong(offset+24) &&  bytesStore.readLong(offset+8) ==  bytesStore.readLong(offset+32) );
 	}
 
 	@Override
-	public long getKey1() {
-		// TODO Auto-generated method stub
-		return 0;
+	public long getKey1() 
+	{
+		return bytesStore.readLong(offset+0 );
 	}
 
 	@Override
-	public long getKey2() {
-		// TODO Auto-generated method stub
-		return 0;
+	public long getKey2() 
+	{
+		return bytesStore.readLong(offset+8 );
 	}
 
 	@Override
-	public String getPrintableText(){
-		return null;
+	public String getPrintableText() 
+	{
+		StringBuilder builder = new StringBuilder();
+		builder.append( bytesStore.readLong(offset+0) );
+		builder.append( ' ' );
+		builder.append( bytesStore.readLong(offset+8) );
+		builder.append( ' ' );
+		builder.append( bytesStore.readLong(offset+16) );
+		builder.append( ' ' );
+		builder.append( bytesStore.readLong(offset+24) );
+		builder.append( ' ' );
+		builder.append( bytesStore.readLong(offset+32) );
+		builder.append( ' ' );
+		builder.append( bytesStore.readLong(offset+40) );
+		return builder.toString();
 	}
+	
 }

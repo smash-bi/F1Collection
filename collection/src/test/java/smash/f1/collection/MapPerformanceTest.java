@@ -142,9 +142,13 @@ public final class MapPerformanceTest
 		for( long count=0; count<aNoOfData; count++ )
 		{
 			data.setKey(count, count+aNoOfData);
-			aMap.getZeroCopy(data);
+			if ( !aMap.getZeroCopy(data) )
+			{
+				throw new RuntimeException( "Data does not exist " + count );
+			}
 			if ( !data.isCorrect() )
 			{
+				System.out.println( "Incorrect data " + data.getPrintableText() );
 				throw new RuntimeException( "Data is incorrect " + count );
 			}
 		}
@@ -195,13 +199,19 @@ public final class MapPerformanceTest
 				map = binaryMap;
 				System.out.println( "Max Size " + binaryMap.getMaxSize() + " Size " + binaryMap.getSize()  );
 			}
+			else if ( mapClass.equals( "ChronicleMap"))
+			{
+				TestDataMapForChronicleMap chronicleMap = new TestDataMapForChronicleMap( noOfData );
+				map = chronicleMap;
+				System.out.println( "Off Heap Size " + chronicleMap.getOffHeapMemory()  );
+			}
 			else
 			{
 				throw new RuntimeException( "No such map type " + mapClass );
 			}
 			System.out.println( "Warming up " + mapClass + " Testing " + noOfData + " data" );
 			PrepareTest( map, noOfData );
-			for( int count=0; count<1; count++ )
+			for( int count=0; count<20; count++ )
 			{
 				System.out.println( "Test Put " + TestAdd( map, noOfData ) );
 				System.out.println( "Test Get " + TestGet( map, noOfData ) );
