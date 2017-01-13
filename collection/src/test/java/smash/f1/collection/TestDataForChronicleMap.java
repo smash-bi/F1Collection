@@ -123,5 +123,27 @@ public final class TestDataForChronicleMap implements TestData, Byteable
 		builder.append( bytesStore.readLong(offset+40) );
 		return builder.toString();
 	}
+
+	@Override
+	public boolean equals( Object aData )
+	{
+		if ( aData instanceof TestDataForChronicleMap )
+		{
+			TestDataForChronicleMap data = (TestDataForChronicleMap)aData;
+			return data.getKey1() == getKey1() && data.getKey2() == getKey2();
+		}
+		else
+		{
+			return false;
+		}
+	}
 	
+	@Override
+	public int hashCode()
+	{
+		long time = getKey1();
+		long clockSequenceAndNode = getKey2();
+		long hilo = time ^ clockSequenceAndNode;
+		return ((int)(hilo >> 32)) ^ (int) hilo;
+	}
 }

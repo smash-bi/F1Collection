@@ -116,7 +116,7 @@ public final class MapPerformanceTest
 		{
 			data.setKey(count, count+aNoOfData);
 			TestData retrievedData = aMap.get(data);
-			if ( !retrievedData.isCorrect() )
+			if ( !retrievedData.isCorrect() || retrievedData.getKey1() != count || retrievedData.getKey2() != (count+aNoOfData)  )
 			{
 				throw new RuntimeException( "Data is incorrect " + count );
 			}
@@ -146,7 +146,7 @@ public final class MapPerformanceTest
 			{
 				throw new RuntimeException( "Data does not exist " + count );
 			}
-			if ( !data.isCorrect() )
+			if ( !data.isCorrect() || data.getKey1() != count || data.getKey2() != (count+aNoOfData) )
 			{
 				System.out.println( "Incorrect data " + data.getPrintableText() );
 				throw new RuntimeException( "Data is incorrect " + count );

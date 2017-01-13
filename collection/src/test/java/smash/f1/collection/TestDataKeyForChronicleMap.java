@@ -71,4 +71,27 @@ public class TestDataKeyForChronicleMap implements Byteable
 	{
 		return bytesStore.readLong( offset + 8 );
 	}
+	
+	@Override
+	public boolean equals( Object aKey )
+	{
+		if ( aKey instanceof TestDataKeyForChronicleMap )
+		{
+			TestDataKeyForChronicleMap key = (TestDataKeyForChronicleMap)aKey;
+			return key.getKey1() == getKey1() && key.getKey2() == getKey2();
+		}
+		else
+		{
+			return false;
+		}
+	}
+	
+	@Override
+	public int hashCode()
+	{
+		long time = getKey1();
+		long clockSequenceAndNode = getKey2();
+		long hilo = time ^ clockSequenceAndNode;
+		return ((int)(hilo >> 32)) ^ (int) hilo;
+	}
 }

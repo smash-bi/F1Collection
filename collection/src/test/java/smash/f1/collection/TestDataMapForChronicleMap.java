@@ -31,6 +31,7 @@ public final class TestDataMapForChronicleMap implements TestDataMap
 		map = ChronicleMap.of( TestDataKeyForChronicleMap.class, TestDataForChronicleMap.class)
 				.name( "TestDataMapForChronicleMap")
 				.entries(aMaxNoOfRecords)
+				.putReturnsNull( true )
 				.create();
 		BytesStore bytesStore = BytesStore.wrap( new byte[16] );
 		key.bytesStore( bytesStore, 0, bytesStore.capacity() );
