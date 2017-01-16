@@ -104,7 +104,6 @@ public final class TestDataMapForChronicleMap implements TestDataMap
 	public boolean getZeroCopy(final TestData aData ) 
 	{
 		key.setKey( aData.getKey1(), aData.getKey2() );
-System.out.println( "KEY " + aData.getKey1() + " "+ aData.getKey2() + " " + key.getKey1() + " " + key.getKey2() );
 		return map.getUsing( key, (TestDataForChronicleMap)aData ) != null;	
 	}
 

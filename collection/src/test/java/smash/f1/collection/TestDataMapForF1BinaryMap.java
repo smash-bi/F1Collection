@@ -22,7 +22,9 @@ import smash.f1.core.agrona.LongUnsafeBuffer;
 
 public final class TestDataMapForF1BinaryMap implements TestDataMap
 {
-	private F1BinaryMap binaryMap;
+	private final F1BinaryMap binaryMap;
+	private final TestDataForF1BinaryMapVerifier verifier = new TestDataForF1BinaryMapVerifier();
+	private final TestDataForF1BinaryMapToString toString = new TestDataForF1BinaryMapToString();
 	
 	public TestDataMapForF1BinaryMap( final long anInitialNoOfRecords, 
     		long aNoOfBuckets, long aMaxNoOfRecords,
@@ -59,6 +61,22 @@ public final class TestDataMapForF1BinaryMap implements TestDataMap
 	{
 		LongUnsafeBuffer buffer = ((TestDataForF1BinaryMap)aData).getBuffer();
 		if ( binaryMap.get(buffer, TestDataForF1BinaryMap.KEY_START_INDEX, buffer, TestDataForF1BinaryMap.VALUE_START_INDEX ) )
+		{
+			return aData;
+		}
+		else
+		{
+			return null;
+		}
+	}
+	
+	/**
+	 * get test data from the map
+	 */
+	public TestData getWithVerification( final TestData aData )
+	{
+		LongUnsafeBuffer buffer = ((TestDataForF1BinaryMap)aData).getBuffer();
+		if ( binaryMap.getRecord(buffer, TestDataForF1BinaryMap.KEY_START_INDEX, buffer, TestDataForF1BinaryMap.VALUE_START_INDEX,verifier,toString ) != F1BinaryMap.NULL )
 		{
 			return aData;
 		}

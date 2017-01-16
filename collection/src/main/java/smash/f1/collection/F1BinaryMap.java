@@ -417,7 +417,7 @@ public class F1BinaryMap
 		if ( concurrentMap )
 		{
 	    	long oldSize = getSize();
-	    	while( !mapBackingStore.compareAndPutLongInHeaderMemoryRegion( MAP_HEADER_FIELD_ADDRESS_SIZE, oldSize, oldSize+1 ) )
+	    	while( !mapBackingStore.compareAndPutLongInHeaderMemoryRegion( MAP_HEADER_FIELD_ADDRESS_SIZE, oldSize+1, oldSize ) )
 	    	{
 	    		oldSize = getSize();
 	    	}			
@@ -437,7 +437,7 @@ public class F1BinaryMap
 		if ( concurrentMap )
 		{
 	    	long oldSize = getSize();
-	    	while( !mapBackingStore.compareAndPutLongInHeaderMemoryRegion( MAP_HEADER_FIELD_ADDRESS_SIZE, oldSize, oldSize-1 ) )
+	    	while( !mapBackingStore.compareAndPutLongInHeaderMemoryRegion( MAP_HEADER_FIELD_ADDRESS_SIZE, oldSize-1, oldSize ) )
 	    	{
 	    		oldSize = getSize();
 	    	}			
@@ -504,7 +504,7 @@ public class F1BinaryMap
     	 * @param aValue top value of the given bucket
     	 */
     	private void updateTop( final long aBucketIndex, final long aValue )
-    	{
+    	{		
     		mapBackingStore.putLongInMemoryRegion( getTopFieldAddress(aBucketIndex), aValue );
     	}
     	
@@ -527,7 +527,7 @@ public class F1BinaryMap
     	private void unlock( final long aBucketIndex )
     	{
     		if ( concurrentMap )
-    		{
+    		{			
     			mapBackingStore.putLongInMemoryRegion( getLockFieldAddress(aBucketIndex), VALUE_UNLOCKED );
     		}
     	}
@@ -899,6 +899,20 @@ public class F1BinaryMap
 	 * @return record position
 	 */
 	public long getRecord( final LongDirectBuffer aKey, final long aKeyStartIndex, final LongMutableDirectBuffer aValue, final long aValueStartIndex ) 
+	{	
+		return getRecord( aKey, aKeyStartIndex, aValue, aValueStartIndex, null, null );
+	}
+	
+	/**
+	 * get the record of the given key and copy into the given buffer
+	 * @param aKey key
+	 * @param aKeyStartIndex start index of the key in the key buffer
+	 * @param aValue value buffer
+	 * @param aValueStartIndex start index of the value should be copied to
+	 * @return record position
+	 */
+	public long getRecord( final LongDirectBuffer aKey, final long aKeyStartIndex, final LongMutableDirectBuffer aValue, final long aValueStartIndex, 
+			final KeyValueVerifier aVerifier, final KeyValueToString aKeyValueToString ) 
 	{		
 	    long bucket = hashBucketRegion.hash( aKey, aKeyStartIndex );
 	    hashBucketRegion.lock( bucket );
@@ -913,6 +927,14 @@ public class F1BinaryMap
 	    			if ( equals( aKey, aKeyStartIndex, recordPosition ) ) 
 	    			{	// found ?
 	    				recordRegion.copyValueFromRecordRegion( recordPosition, aValue, aValueStartIndex);
+	    				if ( aVerifier != null && aKeyValueToString != null && !aVerifier.verify(aKey, aKeyStartIndex, aValue, aValueStartIndex))
+	    				{
+	    					System.err.println( "Failed key value verification Key: " + aKeyValueToString.convertKey(aKey, aKeyStartIndex, keySize)
+	    								+ " Value: " + aKeyValueToString.convertValue(aValue, aValueStartIndex, valueSize));
+	    					// if verification fails then print out the whole memory map
+	    					dump( aKeyValueToString );
+	    					System.exit(-1);
+	    				}	
 	    				break;
 	    			} // if
 	    			if ( recordRegion.getLinkValue( recordPosition ) == NULL ) 
@@ -986,7 +1008,7 @@ public class F1BinaryMap
 	 */
 	final long putRecord( final LongDirectBuffer aKey, final long aKeyStartIndex, final LongDirectBuffer aValue, final long aValueStartIndex ) 
 	{
-	    long bucket = hashBucketRegion.hash( aKey, aKeyStartIndex );
+	    long bucket = hashBucketRegion.hash( aKey, aKeyStartIndex );  
 	    hashBucketRegion.lock( bucket );
 	    long recordPosition = NULL;
 	    // check for update versus add
