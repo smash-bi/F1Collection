@@ -412,7 +412,6 @@ public class LongUnsafeBuffer implements LongAtomicBuffer, Comparable<LongUnsafe
         {
             boundsCheck0(index, SIZE_OF_LONG);
         }
-
         return UNSAFE.compareAndSwapLong(byteArray, addressOffset + index, expectedValue, updateValue);
     }
 
