@@ -205,4 +205,10 @@ public final class TestDataMapForF1BinaryMap implements TestDataMap
 	{
 		binaryMap.dispose(true);
 	}
+	
+	@Override
+	public boolean isZeroCopyGetAllowed()
+	{
+		return binaryMap.isZeroCopyGetAllowed();
+	}
 }

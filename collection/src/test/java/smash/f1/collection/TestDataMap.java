@@ -74,4 +74,10 @@ public interface TestDataMap
 	 * dispose
 	 */
 	public void dispose();
+	
+	/**
+	 * check if zero copy get is allowed. Zero Copy is only allowed in non-concurrent Direct Memory Backed F1BinaryMap
+	 * @return true if zero copy get is allowed or false if it is not
+	 */
+	public boolean isZeroCopyGetAllowed();
 }

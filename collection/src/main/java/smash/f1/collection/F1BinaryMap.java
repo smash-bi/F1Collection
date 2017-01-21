@@ -154,6 +154,7 @@ public class F1BinaryMap
     public RecordRegion recordRegion;				// 3rd structure in mapped file
     
     private F1BinaryMapStatistics statistics = new F1BinaryMapStatistics();
+    private final boolean zeroCopyGetAllowed;
     
 	/**
 	 * create F1BinaryMap based on existing memory mapped files
@@ -180,6 +181,7 @@ public class F1BinaryMap
 		assert( mapBackingStore.getLongFromHeaderMemoryRegion( MAP_HEADER_FIELD_ADDRESS_RECORD_SIZE ) == recordSize ); // consistency check
     	hashBucketRegion = new HashBucketRegion( mapBackingStore.getLongFromHeaderMemoryRegion( MAP_HEADER_FIELD_ADDRESS_NO_OF_BUCKETS ) );		// can now set number of hash buckets
     	recordRegion = new RecordRegion();
+    	zeroCopyGetAllowed = false;
     }
 	
 	/**
@@ -216,6 +218,7 @@ public class F1BinaryMap
     	hashBucketRegion = new HashBucketRegion( mapBackingStore.getLongFromHeaderMemoryRegion( MAP_HEADER_FIELD_ADDRESS_NO_OF_BUCKETS ) );		// can now set number of hash buckets
     	recordRegion = new RecordRegion();			// can now use number of hash buckets
 		hashBucketRegion.initializeHashBuckets();				// construction
+		zeroCopyGetAllowed = false;
 	}
 	
 	/**
@@ -250,6 +253,7 @@ public class F1BinaryMap
     	hashBucketRegion = new HashBucketRegion( mapBackingStore.getLongFromHeaderMemoryRegion( MAP_HEADER_FIELD_ADDRESS_NO_OF_BUCKETS ) );		// can now set number of hash buckets
     	recordRegion = new RecordRegion();			// can now use number of hash buckets
 		hashBucketRegion.initializeHashBuckets();				// construction
+		zeroCopyGetAllowed = !isConcurrentMap;
 	}
 	
 	/**
@@ -946,6 +950,15 @@ public class F1BinaryMap
 	} // get
 	
 	/**
+	 * check if zero copy get is allowed. Zero Copy is only allowed in non-concurrent Direct Memory Backed F1BinaryMap
+	 * @return true if zero copy get is allowed or false if it is not
+	 */
+	public boolean isZeroCopyGetAllowed()
+	{
+		return zeroCopyGetAllowed;
+	}
+	
+	/**
 	 * get the record of the given key and map the address location to the given buffer without copying the data. This method will throw RuntimeException if
 	 * F1BinaryMap is set to be a concurrent map. Extreme caution has to be in place when using this method since this method will position the given buffer
 	 * to the location of the value of the given key but if the record is changed after this method is called then the content in the given buffer will be undefined
@@ -957,9 +970,9 @@ public class F1BinaryMap
 	 */
 	public long getRecordZeroCopy( final LongDirectBuffer aKey, final long aKeyStartIndex, final LongMutableDirectBuffer aValue, final long aValueStartIndex ) 
 	{		
-		if ( concurrentMap )
+		if ( !zeroCopyGetAllowed )
 		{
-			throw new RuntimeException( "This method cannot be used in concurrent mode" );
+			throw new RuntimeException( "Zero Copy is not allowed for Memory Mapped File backed or Concurrent F1BinaryMap" );
 		}
 	    long bucket = hashBucketRegion.hash( aKey, aKeyStartIndex );
 	    hashBucketRegion.lock( bucket );

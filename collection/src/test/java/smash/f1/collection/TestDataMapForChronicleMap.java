@@ -142,4 +142,10 @@ public final class TestDataMapForChronicleMap implements TestDataMap
 	{
 		return map.offHeapMemoryUsed();
 	}
+	
+	@Override
+	public boolean isZeroCopyGetAllowed()
+	{
+		return false;
+	}
 }

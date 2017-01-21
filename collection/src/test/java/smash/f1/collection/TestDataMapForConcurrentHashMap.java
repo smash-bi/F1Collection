@@ -99,4 +99,10 @@ public final class TestDataMapForConcurrentHashMap implements TestDataMap
 	{
 		
 	}
+	
+	@Override
+	public boolean isZeroCopyGetAllowed()
+	{
+		return false;
+	}
 }

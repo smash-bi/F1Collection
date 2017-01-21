@@ -215,7 +215,10 @@ public final class MapPerformanceTest
 			{
 				System.out.println( "Test Put " + TestAdd( map, noOfData ) );
 				System.out.println( "Test Get " + TestGet( map, noOfData ) );
-				System.out.println( "Test Zero Copy " + TestGetWithZeroCopy( map, noOfData ) );
+				if ( map.isZeroCopyGetAllowed() )
+				{
+					System.out.println( "Test Zero Copy " + TestGetWithZeroCopy( map, noOfData ) );
+				}
 			}
 		}
 		catch( Throwable t )

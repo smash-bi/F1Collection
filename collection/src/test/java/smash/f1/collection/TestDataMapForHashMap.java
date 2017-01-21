@@ -99,4 +99,10 @@ public final class TestDataMapForHashMap implements TestDataMap
 	{
 		
 	}
+	
+	@Override
+	public boolean isZeroCopyGetAllowed()
+	{
+		return false;
+	}
 }
