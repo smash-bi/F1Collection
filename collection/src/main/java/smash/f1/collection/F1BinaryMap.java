@@ -661,11 +661,90 @@ public class F1BinaryMap
     	 */
     	private long newRecord( final LongDirectBuffer aKey, final long aKeyStartIndex, final long aBucketIndex )
     	{
-    		// TODO potentially optimize it without the need to resolve the address everytime 
-		    long recordPosition = allocateNewRecordInBucket( aBucketIndex );
-		    updateLinkValue( recordPosition, NULL );
-		    copyKeyToRecordRegion( recordPosition, aKey, aKeyStartIndex );
-		    return recordPosition;
+    	    lockMap();  	
+    	    long availableRecordIndex = NULL;
+    	    try 
+    	    {
+    	    	availableRecordIndex = mapBackingStore.getLongFromMemoryRegion( MAP_HEADER_FIELD_ADDRESS_FREE );
+    			// free nodes ?
+    			if ( availableRecordIndex != NULL ) 
+    			{	
+    				mapBackingStore.putLongInHeaderMemoryRegion( MAP_HEADER_FIELD_ADDRESS_FREE, recordRegion.getLinkValue( availableRecordIndex ) );		
+    			} 
+    			else 
+    			{					
+    				// allocate new new node
+    			    if ( mapBackingStore.getLongFromHeaderMemoryRegion( MAP_HEADER_FIELD_ADDRESS_END ) >= mapBackingStore.getLongFromHeaderMemoryRegion( MAP_HEADER_FIELD_ADDRESS_SBRK ) ) 
+    			    {	
+    			    	// cannot expand => evict
+    			    	long expandedMapBackingStoreSize = mapBackingStore.expand( MAP_HEADER_FIELD_ADDRESS_NO_OF_MEMORY_PAGES );
+    			    	if ( expandedMapBackingStoreSize == -1 ) 
+    			    	{	
+    			    		long recordPosition = NULL;
+    			    		for ( long currentBucketIndex = (aBucketIndex + 1) & hashBucketRegion.modFactor; ; currentBucketIndex = (currentBucketIndex + 1) & hashBucketRegion.modFactor ) 
+    			    		{
+    			    			// cycled ?
+    			    			if ( currentBucketIndex == aBucketIndex ) 
+    			    			{	
+    			    				// consistent state
+    			    				throw new RuntimeException( "Fatal: Inconsistent state" );
+    			    			} // if
+    			    			hashBucketRegion.lock( currentBucketIndex );
+    			    			try 
+    			    			{
+    			    				recordPosition = hashBucketRegion.getTop( currentBucketIndex );
+    			    				// non-empty hash chain
+    			    				if ( recordPosition != NULL ) 
+    			    				{	
+    			    					// remove first (head) node
+    			    					if ( recordRegion.getLinkValue( recordPosition ) == NULL ) 
+    			    					{ 		
+    			    						hashBucketRegion.updateTop( currentBucketIndex, NULL ); // remove only node
+    			    					} 
+    			    					else 
+    			    					{
+    			    						long previousRecord = recordPosition; // need previous node
+    			    						// search hash chain
+    			    						for ( ;; recordPosition = recordRegion.getLinkValue( recordPosition ) ) 
+    			    						{ 
+    			    							if ( recordRegion.getLinkValue( recordPosition ) == NULL ) 
+    			    							{
+    			    								break; 
+    			    							}
+    			    							previousRecord = recordPosition;
+    			    						} // for
+    			    						recordRegion.updateLinkValue( previousRecord, NULL ); // remove last node
+    			    					} // if
+    			    					// record removed
+    			    					break;
+    			    				} // if
+    			    			} 
+    			    			finally 
+    			    			{
+    			    				hashBucketRegion.unlock( currentBucketIndex );
+    			    			} // try
+    			    		} // for
+    			    		statisticsEvicts += 1;
+    			    		availableRecordIndex = recordPosition;
+    			    		return availableRecordIndex;
+    			    	} // if
+    	
+    			    	// expand
+    			    	statisticsExpands += 1;
+    			    	long maxNoOfRecords = (expandedMapBackingStoreSize - recordRegion.baseOffset) / recordSize;
+    				    mapBackingStore.putLongInHeaderMemoryRegion( MAP_HEADER_FIELD_ADDRESS_SBRK, maxNoOfRecords );
+    			    } // if
+    			    availableRecordIndex = mapBackingStore.getLongFromHeaderMemoryRegion( MAP_HEADER_FIELD_ADDRESS_END );			// take next free record
+    			    mapBackingStore.putLongInHeaderMemoryRegion( MAP_HEADER_FIELD_ADDRESS_END, availableRecordIndex + 1 );    			    
+    			} // if
+    			return availableRecordIndex;
+    	    } 
+    	    finally 
+    	    {
+    			updateLinkValue( availableRecordIndex, NULL );
+    			copyKeyToRecordRegion( availableRecordIndex, aKey, aKeyStartIndex );
+    	    	unlockMap();
+    	    }
     	}
     	
     	/**
@@ -737,9 +816,10 @@ public class F1BinaryMap
 	private void free( final long aRecordPosition ) 
 	{
 		lockMap();
-	    try 
+		try 
 	    {
-	    	recordRegion.updateLinkValue( aRecordPosition, mapBackingStore.getLongFromHeaderMemoryRegion( MAP_HEADER_FIELD_ADDRESS_FREE )); // chain to head of freelist
+	    	long nextFree = mapBackingStore.getLongFromHeaderMemoryRegion( MAP_HEADER_FIELD_ADDRESS_FREE );
+	    	recordRegion.updateLinkValue( aRecordPosition, nextFree); // chain to head of freelist
 	    	mapBackingStore.putLongInHeaderMemoryRegion( MAP_HEADER_FIELD_ADDRESS_FREE, aRecordPosition );			// set freelist head to freed node
 	    } 
 	    finally 
@@ -764,95 +844,6 @@ public class F1BinaryMap
 		
 		return keyFunction.equals(aKey, aKeyStartIndex, keyBuffer, keyStartIndex, keySize);
 	} // equals
-
-	/**
-	 * allocate new record in the given bucket
-	 * @param aBucketIndex index of the bucket the new record will be created
-	 * @return newly created record number
-	 */
-	private long allocateNewRecordInBucket( final long aBucketIndex ) 
-	{
-	    lockMap();
-	    try 
-	    {
-	    	long availableRecordIndex = mapBackingStore.getLongFromMemoryRegion( MAP_HEADER_FIELD_ADDRESS_FREE );
-			// free nodes ?
-			if ( availableRecordIndex != NULL ) 
-			{			
-				mapBackingStore.putLongInHeaderMemoryRegion( MAP_HEADER_FIELD_ADDRESS_FREE, recordRegion.getLinkValue( availableRecordIndex ) );
-			} 
-			else 
-			{					
-				// allocate new new node
-			    if ( mapBackingStore.getLongFromHeaderMemoryRegion( MAP_HEADER_FIELD_ADDRESS_END ) >= mapBackingStore.getLongFromHeaderMemoryRegion( MAP_HEADER_FIELD_ADDRESS_SBRK ) ) 
-			    {	
-			    	// cannot expand => evict
-			    	long expandedMapBackingStoreSize = mapBackingStore.expand( MAP_HEADER_FIELD_ADDRESS_NO_OF_MEMORY_PAGES );
-			    	if ( expandedMapBackingStoreSize == -1 ) 
-			    	{	
-			    		long recordPosition;
-			    		for ( long currentBucketIndex = (aBucketIndex + 1) & hashBucketRegion.modFactor; ; currentBucketIndex = (currentBucketIndex + 1) & hashBucketRegion.modFactor ) 
-			    		{
-			    			// cycled ?
-			    			if ( currentBucketIndex == aBucketIndex ) 
-			    			{	
-			    				unlockMap(); // consistent state
-			    				throw new RuntimeException( "Fatal: Inconsistent state" );
-			    			} // if
-			    			hashBucketRegion.lock( currentBucketIndex );
-			    			try 
-			    			{
-			    				recordPosition = hashBucketRegion.getTop( currentBucketIndex );
-			    				// non-empty hash chain
-			    				if ( recordPosition != NULL ) 
-			    				{	
-			    					// remove first (head) node
-			    					if ( recordRegion.getLinkValue( recordPosition ) == NULL ) 
-			    					{ 
-			    						hashBucketRegion.updateTop( currentBucketIndex, NULL ); // remove only node
-			    					} 
-			    					else 
-			    					{
-			    						long previousRecord = recordPosition; // need previous node
-			    						// search hash chain
-			    						for ( ;; recordPosition = recordRegion.getLinkValue( recordPosition ) ) 
-			    						{ 
-			    							if ( recordRegion.getLinkValue( recordPosition ) == NULL ) 
-			    							{
-			    								break; 
-			    							}
-			    							previousRecord = recordPosition;
-			    						} // for
-			    						recordRegion.updateLinkValue( previousRecord, NULL ); // remove last node
-			    					} // if
-			    					// record removed
-			    					break;
-			    				} // if
-			    			} 
-			    			finally 
-			    			{
-			    				hashBucketRegion.unlock( currentBucketIndex );
-			    			} // try
-			    		} // for
-			    		statisticsEvicts += 1;
-			    		return recordPosition;
-			    	} // if
-	
-			    	// expand
-			    	statisticsExpands += 1;
-			    	long maxNoOfRecords = (expandedMapBackingStoreSize - recordRegion.baseOffset) / recordSize;
-				    mapBackingStore.putLongInHeaderMemoryRegion( MAP_HEADER_FIELD_ADDRESS_SBRK, maxNoOfRecords );
-			    } // if
-			    availableRecordIndex = mapBackingStore.getLongFromHeaderMemoryRegion( MAP_HEADER_FIELD_ADDRESS_END );			// take next free record
-			    mapBackingStore.putLongInHeaderMemoryRegion( MAP_HEADER_FIELD_ADDRESS_END, availableRecordIndex + 1 );
-			} // if
-			return availableRecordIndex;
-	    } 
-	    finally 
-	    {
-	    	unlockMap();
-	    } // try
-	} // allocateNewRecordInBucket
 	
 	/**
 	 * get record position based on the given key
@@ -931,6 +922,8 @@ public class F1BinaryMap
 	    				{
 	    					System.err.println( "Failed key value verification Key: " + aKeyValueToString.convertKey(aKey, aKeyStartIndex, keySize)
 	    								+ " Value: " + aKeyValueToString.convertValue(aValue, aValueStartIndex, valueSize));
+	    					// prevent deadlock
+	    					hashBucketRegion.unlock( bucket );
 	    					// if verification fails then print out the whole memory map
 	    					dump( aKeyValueToString );
 	    					System.exit(-1);
@@ -1047,7 +1040,7 @@ public class F1BinaryMap
 
 	    // Race to add new record with given key, but could lose and becomes update.
 	    // Update => allocated record unused.
-	    hashBucketRegion.lock( bucket );   
+	    hashBucketRegion.lock( bucket );
 	    try 
 	    {
 	    	long top = hashBucketRegion.getTop( bucket );
@@ -1055,7 +1048,7 @@ public class F1BinaryMap
 	    	if ( recordPosition == NULL ) 
 	    	{			
 	    		// empty hash chain
-	    		recordRegion.copyValueToRecordRegion( newRecordPosition, aValue, aValueStartIndex );
+	    		recordRegion.copyValueToRecordRegion( newRecordPosition, aValue, aValueStartIndex );   		
 	    		hashBucketRegion.updateTop( bucket, newRecordPosition ); // set bucket to new node
 	    		recordPosition = newRecordPosition;
 	    	} 
@@ -1120,7 +1113,8 @@ public class F1BinaryMap
 	    	}
 	    	if ( equals( aKey, aKeyStartIndex, recordPosition ) ) 
 	    	{		// found, remove first (head) node
-	    		hashBucketRegion.updateTop( bucket, recordRegion.getLinkValue( recordPosition ) ); // set bucket to next node on freelist
+	    		long linkValue = recordRegion.getLinkValue( recordPosition );	    		
+	    		hashBucketRegion.updateTop( bucket, linkValue ); // set bucket to next node on freelist
 	    	} 
 	    	else 
 	    	{
@@ -1244,19 +1238,22 @@ public class F1BinaryMap
 		    	long bucketTop = hashBucketRegion.getTop( bucketIndex );
 		    	if ( bucketTop != NULL ) 
 		    	{
-		    		for ( long recordPosition = hashBucketRegion.getTop( bucketIndex  ); recordPosition != NULL; recordPosition = recordRegion.getLinkValue( recordPosition ) ) 
+		    		long recordPosition = hashBucketRegion.getTop( bucketIndex  );
+		    		while( recordPosition != NULL )
 		    		{
-		    			recordRegion.updateLinkValue( recordPosition, NULL );
-		    		} // for
+		    			long nextRecordPosition = recordRegion.getLinkValue( recordPosition );
+		    			long freeRecord =  mapBackingStore.getLongFromHeaderMemoryRegion( MAP_HEADER_FIELD_ADDRESS_FREE );
+		    			recordRegion.updateLinkValue( recordPosition, freeRecord );
+		    			mapBackingStore.putLongInHeaderMemoryRegion( MAP_HEADER_FIELD_ADDRESS_FREE, recordPosition );
+		    			recordPosition = nextRecordPosition;
+		    		}
 		    		hashBucketRegion.updateTop( bucketIndex, NULL );
 		    	} // if
 		    } // for
-		    mapBackingStore.putLongInHeaderMemoryRegion( MAP_HEADER_FIELD_ADDRESS_END, 0 );
-		    mapBackingStore.putLongInHeaderMemoryRegion( MAP_HEADER_FIELD_ADDRESS_FREE, NULL );
 		    mapBackingStore.putLongInHeaderMemoryRegion( MAP_HEADER_FIELD_ADDRESS_SIZE, 0 );
 		}
 		finally
-		{
+		{		
 			// unlock everything
 		    for ( long bucketIndex = 0; bucketIndex < hashBucketRegion.noOfBuckets; bucketIndex += 1 ) 
 		    {
@@ -1272,7 +1269,19 @@ public class F1BinaryMap
 	 */
 	public void dump( KeyValueToString aKeyValueToString ) 
 	{
-		lockMap();
+		dump( aKeyValueToString, true );
+	}
+	
+	/**
+	 * dump the map backing store information to console
+	 * @param aKeyValueToString converter to convert key and value to human readable form
+	 */
+	public void dump( KeyValueToString aKeyValueToString, boolean shouldLockMap ) 
+	{
+		if ( shouldLockMap )
+		{
+			lockMap();
+		}
 		try
 		{
 		    final int perLine = 10;			// nodes per line of output
@@ -1297,7 +1306,7 @@ public class F1BinaryMap
 		    		int count = 0;
 		    		for ( long recordPosition = hashBucketRegion.getTop( bucketIndex  ); recordPosition != NULL; recordPosition = recordRegion.getLinkValue( recordPosition ) ) 
 		    		{
-		    			System.out.print( "[key:" + recordRegion.convertKey(recordPosition, aKeyValueToString) + " record:" 
+		    			System.out.print( "[position:" + recordPosition + " key:" + recordRegion.convertKey(recordPosition, aKeyValueToString) + " record:" 
 		    								+ recordRegion.convertValue(recordPosition, aKeyValueToString)  + "] -> ");
 		    			if ( count == perLine ) 
 		    			{
@@ -1327,7 +1336,10 @@ public class F1BinaryMap
 		}
 		finally
 		{
-			unlockMap();
+			if ( shouldLockMap )
+			{
+				unlockMap();
+			}
 		}
 	} // dump
 	

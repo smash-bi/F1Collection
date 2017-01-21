@@ -47,8 +47,10 @@ public final class F1BinaryMapConcurrentTestHarness implements Runnable
 	{
 		final TestData data = map.createTestData();
 		long time = 0;
+		long iteration = 0;
 		while(!DISPOSED.get())
 		{
+			iteration++;
 			System.out.println( "Starting Loop " + identifier );
 			time = System.currentTimeMillis();
 			for( long count=0; count<noOfData; count++ )
@@ -60,10 +62,16 @@ public final class F1BinaryMapConcurrentTestHarness implements Runnable
 				{
 					System.err.println( "Data is incorrect " + count + " expecting " + count + " " + count+noOfData + " got " + retrievedData.getPrintableText());
 				}
+				//map.remove(retrievedData);
 			}
 			time = System.currentTimeMillis() - time;
 			System.out.println( "Completed 1 Loop " + identifier + " Time " + time );
-			//map.clear();
+			//if ( iteration % 20 == 0 )
+			//{
+			//	map.dump();
+			//}
+			map.clear();
+			//map.dump();
 		}
 		System.out.println( "Done " + identifier );
 	}
